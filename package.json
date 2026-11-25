@@ -1,0 +1,26 @@
+{
+  "name": "@cmzn-consulting/formatter",
+  "version": "0.1.0",
+  "private": true,
+  "description": "One formatter for every repository: a fixed set of tools at their defaults.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "formatter": "src/cli.ts"
+  },
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "bun ./node_modules/typescript/bin/tsc --noEmit",
+    "format": "bun src/cli.ts write",
+    "format:check": "bun src/cli.ts check"
+  },
+  "dependencies": {
+    "@astral-sh/ruff-wasm-nodejs": "0.17.6",
+    "prettier": "3.10.1",
+    "sh-syntax": "0.8.7"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.5",
+    "typescript": "7.0.2"
+  }
+}
