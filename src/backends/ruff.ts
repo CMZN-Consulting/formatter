@@ -1,7 +1,6 @@
 import { PositionEncoding, Workspace } from "@astral-sh/ruff-wasm-nodejs";
 import type { Backend } from "../backend.ts";
 
-const byteOrderMark = "﻿";
 let workspace: Workspace | undefined;
 
 export const ruffBackend: Backend = {
@@ -15,8 +14,6 @@ export const ruffBackend: Backend = {
       Workspace.defaultSettings(),
       PositionEncoding.Utf16,
     );
-    const marked = text.startsWith(byteOrderMark);
-    const formatted = workspace.format(marked ? text.slice(1) : text);
-    return marked ? byteOrderMark + formatted : formatted;
+    return workspace.format(text);
   },
 };
