@@ -1,5 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { makeRepository, read, runFormatter } from "./scratch.ts";
+import {
+  makeRepository,
+  read,
+  runFormatter,
+  writeTree,
+  type Tree,
+} from "./scratch.ts";
 
 const content = {
   "README.md": "Title\n=====\n\n* one\n    * nested\n",
@@ -58,4 +64,50 @@ describe("M5: a repository's configuration changes no byte of the result (L5)", 
       ".toml": 2,
     });
   });
+});
+
+const bunConfigurations: Readonly<Record<string, Tree>> = {
+  define: {
+    "bunfig.toml": '[define]\n"process.cwd" = "\\"/\\""\n',
+  },
+  preload: {
+    "bunfig.toml": 'preload = ["./patch.ts"]\n',
+    "patch.ts":
+      "const endsWith = String.prototype.endsWith;\n" +
+      "String.prototype.endsWith = function (end: string) {\n" +
+      '  return end === ".py" ? false : endsWith.call(this, end);\n' +
+      "};\n",
+  },
+};
+
+describe("Bun's configuration in the repository changes nothing (L5)", () => {
+  for (const [name, files] of Object.entries(bunConfigurations)) {
+    test(`a bunfig.toml with a ${name} changes no byte and no exit status`, () => {
+      const plain = makeRepository(content);
+      const configured = makeRepository(content);
+      writeTree(configured, files);
+      for (const args of [["check"], ["check", "src"], ["write"], ["check"]]) {
+        const expected = runFormatter(plain, args);
+        const actual = runFormatter(configured, args);
+        expect(actual.exitCode).toBe(expected.exitCode);
+        expect(actual.stdout).toBe(expected.stdout);
+      }
+      for (const path of Object.keys(content)) {
+        expect(read(configured, path)).toBe(read(plain, path));
+      }
+    });
+
+    test(`a bunfig.toml with a ${name} would change the result if Bun read it`, () => {
+      const plain = makeRepository(content);
+      const configured = makeRepository(content);
+      writeTree(configured, files);
+      const direct = { CMZN_FORMATTER_ISOLATED: "1" };
+      const expected = runFormatter(plain, ["check"], direct);
+      const actual = runFormatter(configured, ["check"], direct);
+      expect([actual.exitCode, actual.stdout]).not.toEqual([
+        expected.exitCode,
+        expected.stdout,
+      ]);
+    });
+  }
 });

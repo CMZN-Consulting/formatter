@@ -1,77 +1,28 @@
 #!/usr/bin/env bun
-import { accessSync, constants, writeFileSync } from "node:fs";
-import { SetError } from "./git.ts";
-import { makePlan } from "./plan.ts";
-import { makeReport, renderJson, renderText } from "./report.ts";
+import { join } from "node:path";
 
-const usage = `usage: formatter check [--json] [PATH ...]
-       formatter write [--json] [PATH ...]
-`;
+// Bun reads a bunfig.toml and .env files from the working directory when it
+// starts. The work runs in a second process that reads neither, so the
+// repository's Bun configuration cannot change a byte of the result.
+const marker = "CMZN_FORMATTER_ISOLATED";
+const args = process.argv.slice(2);
 
-interface Command {
-  readonly mode: "check" | "write";
-  readonly json: boolean;
-  readonly paths: readonly string[];
-}
-
-function parse(args: readonly string[]): Command | undefined {
-  const [mode, ...rest] = args;
-  if (mode !== "check" && mode !== "write") {
-    return undefined;
-  }
-  let json = false;
-  let options = true;
-  const paths: string[] = [];
-  for (const arg of rest) {
-    if (options && arg === "--") {
-      options = false;
-    } else if (options && arg === "--json") {
-      json = true;
-    } else if (options && arg.startsWith("-")) {
-      return undefined;
-    } else {
-      paths.push(arg);
-    }
-  }
-  return { mode, json, paths };
-}
-
-async function main(args: readonly string[]): Promise<number> {
-  const command = parse(args);
-  if (command === undefined) {
-    process.stderr.write(usage);
-    return 2;
-  }
-  const plan = await makePlan(process.cwd(), command.paths);
-  const failed = plan.failures.length > 0;
-  let label = "would change";
-  if (command.mode === "write" && !failed) {
-    for (const change of plan.changes) {
-      try {
-        accessSync(change.absolute, constants.W_OK);
-      } catch (error) {
-        throw new SetError(`${change.path}: not writable: ${String(error)}`);
-      }
-    }
-    for (const change of plan.changes) {
-      writeFileSync(change.absolute, change.bytes);
-    }
-    label = "changed";
-  }
-  const report = makeReport(plan);
-  process.stdout.write(
-    command.json ? renderJson(report) : renderText(report, label),
+if (process.env[marker] === "1") {
+  const { run } = await import("./main.ts");
+  process.exitCode = await run(args);
+} else {
+  const child = Bun.spawnSync(
+    [
+      process.execPath,
+      "--no-env-file",
+      `--config=${join(import.meta.dir, "isolated.toml")}`,
+      import.meta.path,
+      ...args,
+    ],
+    {
+      env: { ...process.env, [marker]: "1" },
+      stdio: ["inherit", "inherit", "inherit"],
+    },
   );
-  if (failed) {
-    return 2;
-  }
-  return command.mode === "check" && plan.changes.length > 0 ? 1 : 0;
-}
-
-try {
-  process.exitCode = await main(Bun.argv.slice(2));
-} catch (error) {
-  const message = error instanceof SetError ? error.message : String(error);
-  process.stderr.write(`formatter: ${message}\n`);
-  process.exitCode = 2;
+  process.exitCode = child.exitCode ?? 2;
 }
