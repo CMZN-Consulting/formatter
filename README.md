@@ -158,7 +158,7 @@ formatter check [--json] [PATH ...]
 formatter write [--json] [PATH ...]
 ```
 
-It needs [Bun](https://bun.sh) and git.
+It needs [Bun](https://bun.sh) and git. It does its work in a second Bun process that reads no `bunfig.toml` and no `.env` file, so the repository's own Bun settings change nothing. The same files give the same report and the same bytes on Linux, where this was measured; other platforms are not measured yet.
 
 **Which files.** The command works on the git repository that holds the current directory, from its top. It takes the files that git tracks there, that is the files added with `git add`. With one or more `PATH`s it takes only the tracked files at or below those paths, given from the current directory. A file that git does not track is never read and never written. Outside a git repository the command exits 2.
 
@@ -176,7 +176,7 @@ It needs [Bun](https://bun.sh) and git.
 2. `ignored`: matched by `.formatterignore` at the top of the repository. The file counts only when git tracks it.
 3. `tool-written`: the file's name is one of `bun.lock`, `bun.lockb`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `uv.lock`, `Cargo.lock`, `flake.lock` or `lake-manifest.json`.
 4. `binary`: a zero byte within the first 8,000 bytes, or bytes that are not valid UTF-8.
-5. `formatted`: the first tool that takes the name formats it. Prettier takes every name for which it knows a parser, Ruff takes `.py`, and sh-syntax takes `.sh` and `.bash`.
+5. `formatted`: the first tool that takes the name formats it. Prettier takes every name for which it knows a parser; for a name without a dot it also reads the first line, so a script that starts with `#!/usr/bin/env node` is formatted as JavaScript. Ruff takes `.py`; a `.pyi` stub is left unformatted, because the version of Ruff used here cannot lay out a stub. sh-syntax takes `.sh` and `.bash`; a script that holds a carriage return byte fails, because sh-syntax would read that byte as a blank where bash reads it as part of a word.
 6. `unformatted`: every other file.
 
 **The report.** One line for each class that has files, with its count. Under `unformatted`, one line per extension (`(none)` for a name without a dot). Then `would change` (or `changed` after a successful `write`) with its count and the paths. Then, if a tool failed, `failed` with each path, the tool and the first line of its message. Paths are written from the top of the repository and sorted by their bytes. A path that holds a line break or another control character is printed in double quotes, as JSON would write it.
