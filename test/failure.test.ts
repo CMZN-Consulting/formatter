@@ -60,4 +60,21 @@ describe("M6: a syntax error in one file stops every write (L7)", () => {
     expect(run.stdout).toContain("failed         1\n  broken.json  prettier: ");
     expect(snapshot(root)).toEqual(before);
   });
+
+  test("a carriage return in a shell script stops the write, naming the byte", () => {
+    for (const script of ["echo a\r\necho b\r\n", "echo a\recho  b\n"]) {
+      const root = makeRepository({
+        ...files,
+        "broken.py": "pass\n",
+        "run.sh": script,
+      });
+      const before = snapshot(root);
+      const run = runFormatter(root, ["write"]);
+      expect(run.exitCode).toBe(2);
+      expect(run.stdout).toContain(
+        "failed         1\n  run.sh  shell: line 1 holds a carriage return byte (0x0D)",
+      );
+      expect(snapshot(root)).toEqual(before);
+    }
+  });
 });
