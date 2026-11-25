@@ -179,7 +179,7 @@ It needs [Bun](https://bun.sh) and git.
 5. `formatted`: the first tool that takes the name formats it. Prettier takes every name for which it knows a parser, Ruff takes `.py`, and sh-syntax takes `.sh` and `.bash`.
 6. `unformatted`: every other file.
 
-**The report.** One line for each class that has files, with its count. Under `unformatted`, one line per extension (`(none)` for a name without a dot). Then `would change` (or `changed` after a successful `write`) with its count and the paths. Then, if a tool failed, `failed` with each path, the tool and the first line of its message. Paths are written from the top of the repository and sorted by their bytes.
+**The report.** One line for each class that has files, with its count. Under `unformatted`, one line per extension (`(none)` for a name without a dot). Then `would change` (or `changed` after a successful `write`) with its count and the paths. Then, if a tool failed, `failed` with each path, the tool and the first line of its message. Paths are written from the top of the repository and sorted by their bytes. A path that holds a line break or another control character is printed in double quotes, as JSON would write it.
 
 With `--json` the report is one JSON object:
 
@@ -193,7 +193,13 @@ With `--json` the report is one JSON object:
 | `changed`     | the paths that would change, or changed                    |
 | `failed`      | for each failure: `path`, `backend` and the full `message` |
 
-When the files cannot be listed or read, the command prints the reason on standard error, prints no report, and exits 2.
+When the files cannot be listed or read safely, the command prints the reason on standard error, prints no report, writes nothing, and exits 2. That happens when:
+
+- a tracked file is missing from disk, or is no longer a regular file there;
+- a directory on a tracked file's path has become a link on disk, which would lead outside the repository;
+- `.formatterignore` is tracked as a link, or is not a regular file on disk;
+- a file's name is not valid UTF-8 and the file is not named in `.formatterignore`;
+- `write` would change a file that it is not allowed to write.
 
 ## Licence
 
