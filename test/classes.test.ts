@@ -74,6 +74,35 @@ describe("M2: every tracked file lands in exactly one class", () => {
     ]);
   });
 
+  test("the first class that applies decides", async () => {
+    const root = makeRepository({
+      ".formatterignore": "ignored-*\n",
+      "README.md": "# Read me\n",
+      "ignored-link.md": { link: "README.md" },
+      "ignored-bun.lock/x": "x\n",
+      "deep/bun.lock": "{}\n",
+      "deep/ignored-bun.lock": "{}\n",
+      "Cargo.lock": png,
+      "data.json": png,
+      "bun.lockb": { link: "README.md" },
+    });
+    const plan = await makePlan(root, []);
+    const classes = Object.fromEntries(
+      plan.files.map((file) => [file.path, file.className]),
+    );
+    expect(classes).toEqual({
+      ".formatterignore": "unformatted",
+      "README.md": "formatted",
+      "ignored-link.md": "link",
+      "ignored-bun.lock/x": "ignored",
+      "deep/bun.lock": "tool-written",
+      "deep/ignored-bun.lock": "ignored",
+      "Cargo.lock": "tool-written",
+      "data.json": "binary",
+      "bun.lockb": "link",
+    });
+  });
+
   test("the class counts add up to the count of the set (L3)", () => {
     const root = repository();
     const run = runFormatter(root, ["check", "--json"]);
