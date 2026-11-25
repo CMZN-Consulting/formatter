@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import { writeFileSync } from "node:fs";
+import { accessSync, constants, writeFileSync } from "node:fs";
 import { SetError } from "./git.ts";
 import { makePlan } from "./plan.ts";
 import { makeReport, renderJson, renderText } from "./report.ts";
@@ -46,6 +46,13 @@ async function main(args: readonly string[]): Promise<number> {
   const failed = plan.failures.length > 0;
   let label = "would change";
   if (command.mode === "write" && !failed) {
+    for (const change of plan.changes) {
+      try {
+        accessSync(change.absolute, constants.W_OK);
+      } catch (error) {
+        throw new SetError(`${change.path}: not writable: ${String(error)}`);
+      }
+    }
     for (const change of plan.changes) {
       writeFileSync(change.absolute, change.bytes);
     }

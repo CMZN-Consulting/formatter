@@ -56,6 +56,10 @@ export function makeReport(plan: Plan): Report {
   };
 }
 
+function shownPath(path: string): string {
+  return /[\u0000-\u001f\u007f]/.test(path) ? JSON.stringify(path) : path;
+}
+
 function firstLine(text: string): string {
   const end = text.indexOf("\n");
   return end === -1 ? text : text.slice(0, end);
@@ -80,13 +84,13 @@ export function renderText(report: Report, changedLabel: string): string {
   }
   lines.push(changedLabel.padEnd(labelWidth) + report.changed.length);
   for (const path of report.changed) {
-    lines.push("  " + path);
+    lines.push("  " + shownPath(path));
   }
   if (report.failed.length > 0) {
     lines.push("failed".padEnd(labelWidth) + report.failed.length);
     for (const failure of report.failed) {
       lines.push(
-        `  ${failure.path}  ${failure.backend}: ${firstLine(failure.message)}`,
+        `  ${shownPath(failure.path)}  ${failure.backend}: ${firstLine(failure.message)}`,
       );
     }
   }

@@ -2,18 +2,20 @@ export class SetError extends Error {
   override name = "SetError";
 }
 
+// A path from git is kept as a byte string: one character per byte, so that
+// a name that is not valid UTF-8 keeps its identity and sorts by its bytes.
 export interface Entry {
-  readonly path: string;
+  readonly key: string;
   readonly mode: string;
 }
 
-const decoder = new TextDecoder();
+const strictUtf8 = new TextDecoder("utf-8", { fatal: true });
 
 function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-function git(args: readonly string[], cwd: string): string {
+function git(args: readonly string[], cwd: string): Buffer {
   let result;
   try {
     result = Bun.spawnSync(["git", ...args], {
@@ -26,22 +28,50 @@ function git(args: readonly string[], cwd: string): string {
     throw new SetError(`git could not be run: ${messageOf(error)}`);
   }
   if (result.exitCode !== 0) {
-    const reason = decoder.decode(result.stderr).trim();
+    const reason = result.stderr.toString("utf8").trim();
     throw new SetError(reason === "" ? `git ${args.join(" ")} failed` : reason);
   }
-  return decoder.decode(result.stdout);
+  return result.stdout;
 }
 
-function records(output: string): string[] {
-  return output.split("\0").filter((record) => record !== "");
+function records(output: Buffer): string[] {
+  return output
+    .toString("latin1")
+    .split("\0")
+    .filter((record) => record !== "");
+}
+
+export function textOf(key: string): string | undefined {
+  try {
+    return strictUtf8.decode(Buffer.from(key, "latin1"));
+  } catch {
+    return undefined;
+  }
+}
+
+export function escapedOf(key: string): string {
+  return [...key]
+    .map((character) => {
+      const code = character.charCodeAt(0);
+      return code >= 0x20 && code < 0x7f
+        ? character
+        : `\\x${code.toString(16).padStart(2, "0")}`;
+    })
+    .join("");
 }
 
 export function findRoot(cwd: string): string {
+  let output: Buffer;
   try {
-    return git(["rev-parse", "--show-toplevel"], cwd).replace(/\n$/, "");
+    output = git(["rev-parse", "--show-toplevel"], cwd);
   } catch {
     throw new SetError("not inside the working tree of a git repository");
   }
+  const root = textOf(output.toString("latin1").replace(/\n$/, ""));
+  if (root === undefined) {
+    throw new SetError("the repository's own path is not valid UTF-8");
+  }
+  return root;
 }
 
 export function trackedEntries(root: string): Entry[] {
@@ -50,11 +80,10 @@ export function trackedEntries(root: string): Entry[] {
   for (const record of records(
     git(["ls-files", "-z", "--cached", "--stage"], root),
   )) {
-    const tab = record.indexOf("\t");
-    const path = record.slice(tab + 1);
-    if (!seen.has(path)) {
-      seen.add(path);
-      entries.push({ path, mode: record.slice(0, record.indexOf(" ")) });
+    const key = record.slice(record.indexOf("\t") + 1);
+    if (!seen.has(key)) {
+      seen.add(key);
+      entries.push({ key, mode: record.slice(0, record.indexOf(" ")) });
     }
   }
   return entries;

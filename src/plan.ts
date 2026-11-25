@@ -4,7 +4,6 @@ import type { Backend, Source } from "./backend.ts";
 import { backends } from "./backends/index.ts";
 import {
   baseName,
-  compareBytes,
   decodeText,
   ignoreFileName,
   isLink,
@@ -12,11 +11,14 @@ import {
   type ClassName,
 } from "./classes.ts";
 import {
+  escapedOf,
   findRoot,
   ignoredPaths,
   selectedPaths,
   SetError,
+  textOf,
   trackedEntries,
+  type Entry,
 } from "./git.ts";
 
 export interface PlannedFile {
@@ -50,16 +52,49 @@ function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-function readTracked(source: Source): Uint8Array {
-  let stats;
+function lstatTracked(path: string, absolute: string) {
   try {
-    stats = lstatSync(source.absolute);
+    return lstatSync(absolute);
   } catch (error) {
     throw new SetError(
-      `${source.path}: tracked but not readable: ${messageOf(error)}`,
+      `${path}: tracked but not readable: ${messageOf(error)}`,
     );
   }
-  if (!stats.isFile()) {
+}
+
+function checkDirectories(
+  root: string,
+  path: string,
+  verified: Set<string>,
+): void {
+  const parts = path.split("/");
+  for (let count = 1; count < parts.length; count += 1) {
+    const directory = parts.slice(0, count).join("/");
+    if (verified.has(directory)) {
+      continue;
+    }
+    if (!lstatTracked(path, join(root, directory)).isDirectory()) {
+      throw new SetError(
+        `${path}: on disk, ${directory} is not a directory but a link or a file`,
+      );
+    }
+    verified.add(directory);
+  }
+}
+
+function checkIgnoreFile(root: string, entry: Entry): void {
+  if (isLink(entry.mode)) {
+    throw new SetError(
+      `${ignoreFileName} is tracked as a link, and a link is never followed`,
+    );
+  }
+  if (!lstatTracked(ignoreFileName, join(root, ignoreFileName)).isFile()) {
+    throw new SetError(`${ignoreFileName} is not a regular file on disk`);
+  }
+}
+
+function readTracked(source: Source): Uint8Array {
+  if (!lstatTracked(source.path, source.absolute).isFile()) {
     throw new SetError(
       `${source.path}: tracked as a file but not a regular file on disk`,
     );
@@ -89,57 +124,66 @@ export async function makePlan(
 ): Promise<Plan> {
   const root = findRoot(cwd);
   const entries = trackedEntries(root).sort((left, right) =>
-    compareBytes(left.path, right.path),
+    left.key < right.key ? -1 : left.key > right.key ? 1 : 0,
   );
   const selected = paths.length === 0 ? undefined : selectedPaths(cwd, paths);
-  const ignored = entries.some((entry) => entry.path === ignoreFileName)
-    ? ignoredPaths(root, ignoreFileName)
-    : new Set<string>();
+  const ignoreEntry = entries.find((entry) => entry.key === ignoreFileName);
+  let ignored = new Set<string>();
+  if (ignoreEntry !== undefined) {
+    checkIgnoreFile(root, ignoreEntry);
+    ignored = ignoredPaths(root, ignoreFileName);
+  }
+  const verified = new Set<string>();
   const files: PlannedFile[] = [];
   const changes: Change[] = [];
   const failures: Failure[] = [];
   for (const entry of entries) {
-    if (selected !== undefined && !selected.has(entry.path)) {
+    if (selected !== undefined && !selected.has(entry.key)) {
       continue;
     }
-    const source: Source = {
-      path: entry.path,
-      absolute: join(root, entry.path),
-    };
+    const text = textOf(entry.key);
+    const shown = text ?? Buffer.from(entry.key, "latin1").toString("utf8");
     if (isLink(entry.mode)) {
-      files.push({ path: entry.path, className: "link" });
+      files.push({ path: shown, className: "link" });
       continue;
     }
-    if (ignored.has(entry.path)) {
-      files.push({ path: entry.path, className: "ignored" });
+    if (ignored.has(entry.key)) {
+      files.push({ path: shown, className: "ignored" });
       continue;
     }
-    if (toolWritten.has(baseName(entry.path))) {
-      files.push({ path: entry.path, className: "tool-written" });
+    if (toolWritten.has(baseName(entry.key))) {
+      files.push({ path: shown, className: "tool-written" });
       continue;
     }
-    const bytes = readTracked(source);
-    const text = decodeText(bytes);
     if (text === undefined) {
-      files.push({ path: entry.path, className: "binary" });
+      throw new SetError(
+        `${escapedOf(entry.key)}: the name is not valid UTF-8; name it in ${ignoreFileName}`,
+      );
+    }
+    checkDirectories(root, text, verified);
+    const source: Source = { path: text, absolute: join(root, text) };
+    const bytes = readTracked(source);
+    const content = decodeText(bytes);
+    if (content === undefined) {
+      files.push({ path: text, className: "binary" });
       continue;
     }
     const backend = await claimant(source);
     if (backend === undefined) {
-      files.push({ path: entry.path, className: "unformatted" });
+      files.push({ path: text, className: "unformatted" });
       continue;
     }
     files.push({
-      path: entry.path,
+      path: text,
       className: "formatted",
       backend: backend.name,
     });
     let formatted: string;
     try {
-      formatted = await backend.format(text, source);
+      formatted = await backend.format(content, source);
     } catch (error) {
       failures.push({
-        path: entry.path,
+        path: text,
         backend: backend.name,
         message: messageOf(error),
       });
@@ -148,7 +192,7 @@ export async function makePlan(
     const output = encoder.encode(formatted);
     if (!sameBytes(output, bytes)) {
       changes.push({
-        path: entry.path,
+        path: text,
         absolute: source.absolute,
         bytes: output,
       });
