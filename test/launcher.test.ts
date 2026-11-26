@@ -103,6 +103,24 @@ describe("R1 (ruling 1): no code of the formatter runs in a process that read th
     }
   }
 
+  test("CDPATH in the environment changes nothing, for a start by a relative name", () => {
+    const repository = makeRepository(untidy);
+    // A directory named bin inside the repository, reached as bin/formatter.
+    symlinkSync(dirname(launcher), join(repository, "bin"));
+    const decoy = join(scratchDirectory(), "decoy");
+    mkdirSync(join(decoy, "bin"), { recursive: true });
+    const plain = runCommand(["bin/formatter"], repository, ["check"]);
+    expect(plain.exitCode).toBe(1);
+    for (const cdpath of [decoy, `${decoy}:`, ":", `${repository}`]) {
+      const run = runCommand(["bin/formatter"], repository, ["check"], {
+        CDPATH: cdpath,
+      });
+      expect(run.stderr).toBe(plain.stderr);
+      expect(run.exitCode).toBe(1);
+      expect(run.stdout).toBe(plain.stdout);
+    }
+  });
+
   test("the launcher is a POSIX sh file that is executable", () => {
     expect(Bun.spawnSync(["head", "-n", "1", launcher]).stdout.toString()).toBe(
       "#!/bin/sh\n",

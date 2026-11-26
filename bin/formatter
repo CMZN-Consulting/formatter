@@ -14,8 +14,10 @@ while [ -L "$self" ]; do
   esac
 done
 
-here=$(cd -- "$(dirname -- "$self")" && pwd -P) || exit 2
-root=$(cd -- "$here/.." && pwd -P) || exit 2
+# cd consults CDPATH for a relative name and then prints the directory it found,
+# so it is unset inside each substitution.
+here=$(unset CDPATH; cd -- "$(dirname -- "$self")" && pwd -P) || exit 2
+root=$(unset CDPATH; cd -- "$here/.." && pwd -P) || exit 2
 
 if ! command -v bun >/dev/null 2>&1; then
   echo "formatter: bun was not found on the path" >&2
