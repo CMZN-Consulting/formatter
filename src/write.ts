@@ -30,8 +30,12 @@ export function writeChanges(changes: readonly Change[]): void {
   for (const change of changes) {
     let current: Uint8Array;
     try {
-      if (!lstatSync(change.absolute).isFile()) {
+      const stats = lstatSync(change.absolute);
+      if (!stats.isFile()) {
         throw new Error("no longer a regular file");
+      }
+      if (stats.nlink > 1) {
+        throw new Error(`it now has ${stats.nlink} hard links`);
       }
       current = readFileSync(change.absolute);
     } catch (error) {

@@ -199,6 +199,7 @@ When the files cannot be listed or read safely, the command prints the reason on
 - a directory on a tracked file's path has become a link on disk, which would lead outside the repository;
 - `.formatterignore` is tracked as a link, or is not a regular file on disk;
 - a file's name is not valid UTF-8 and the file is not named in `.formatterignore`;
+- a file that a tool formats (class `formatted`) has more than one hard link on disk, so a write would change every name of it, inside the repository or outside it. This holds for `check` as well as for `write`;
 - `write` would change a file that it is not allowed to write;
 - `write` finds, just before it writes, that a file it would change no longer holds the bytes that were formatted, because someone edited it since. Nothing is written, and the message names that file.
 

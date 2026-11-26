@@ -179,6 +179,12 @@ export async function makePlan(
       className: "formatted",
       backend: backend.name,
     });
+    const links = lstatTracked(text, source.absolute).nlink;
+    if (links > 1) {
+      throw new SetError(
+        `${text}: has ${links} hard links on disk, and a write would change every name of the file`,
+      );
+    }
     let formatted: string;
     try {
       formatted = await backend.format(content, source);
