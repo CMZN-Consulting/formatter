@@ -10,7 +10,7 @@ import {
   snapshot,
 } from "./scratch.ts";
 
-describe("nothing outside the set is read or written (L6)", () => {
+describe("nothing outside the set is read or written", () => {
   test("a tracked file behind a directory that became a link is refused", () => {
     const outside = scratchDirectory();
     writeFileSync(join(outside, "a.md"), "* outside\n");
@@ -79,7 +79,7 @@ describe("the text report", () => {
   });
 });
 
-describe("R8 (ruling 8): the report quotes an extension as it quotes a path", () => {
+describe("the report quotes an extension as it quotes a path", () => {
   test("a line break in an extension forges no line", () => {
     const root = makeRepository({ "x.b\nwould change   0\n  y": "kept\n" });
     const run = runFormatter(root, ["check"]);

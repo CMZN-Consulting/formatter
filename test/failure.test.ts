@@ -9,7 +9,7 @@ const files = {
   "data.json": '{"a":1}\n',
 };
 
-describe("M6: a syntax error in one file stops every write (L7)", () => {
+describe("a syntax error in one file stops every write", () => {
   test("write exits 2 and leaves every file as it was", () => {
     const root = makeRepository(files);
     const before = snapshot(root);

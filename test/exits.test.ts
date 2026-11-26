@@ -26,8 +26,8 @@ const tidy = {
   "notes.typify": "kept  as   it is\n",
 };
 
-describe("M3: the exits 0, 1 and 2", () => {
-  test("check exits 1 when a file would change, and changes no byte (L2)", () => {
+describe("the exits 0, 1 and 2", () => {
+  test("check exits 1 when a file would change, and changes no byte", () => {
     const root = makeRepository(untidy);
     const before = snapshot(root);
     const run = runFormatter(root, ["check"]);
@@ -38,7 +38,7 @@ describe("M3: the exits 0, 1 and 2", () => {
     expect(snapshot(root)).toEqual(before);
   });
 
-  test("write exits 0, and check after write exits 0 (L1)", () => {
+  test("write exits 0, and check after write exits 0", () => {
     const root = makeRepository(untidy);
     const write = runFormatter(root, ["write"]);
     expect(write.exitCode).toBe(0);
@@ -58,7 +58,7 @@ describe("M3: the exits 0, 1 and 2", () => {
     expect(snapshot(root)).toEqual(before);
   });
 
-  test("check exits 2 when a backend fails, and changes no byte (L2)", () => {
+  test("check exits 2 when a backend fails, and changes no byte", () => {
     const root = makeRepository({ ...untidy, "src/broken.py": "def (:\n" });
     const before = snapshot(root);
     const run = runFormatter(root, ["check"]);

@@ -14,7 +14,7 @@ const tree = {
   "fixtures/case.json": '{"a":1}\n',
 };
 
-describe("R7 (ruling 7): an ignore file that git does not track stops the run", () => {
+describe("an ignore file that git does not track stops the run", () => {
   for (const mode of ["check", "write"]) {
     test(`${mode} exits 2 for a .formatterignore that was written and not yet added, and writes nothing`, () => {
       const root = makeRepository(tree);

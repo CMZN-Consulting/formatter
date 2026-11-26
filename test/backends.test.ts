@@ -28,7 +28,7 @@ function source(backend: string, name: string): Source {
   };
 }
 
-describe("M1: each backend formats its fixture", () => {
+describe("each backend formats its fixture", () => {
   for (const pair of pairs) {
     const backend = backendNamed(pair.backend);
     const input = source(pair.backend, `input.${pair.extension}`);

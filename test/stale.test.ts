@@ -11,7 +11,7 @@ const untidy = {
   "src/run.sh": "if true;then\necho  hi\nfi\n",
 };
 
-describe("R2 (ruling 2): nothing is written over newer bytes", () => {
+describe("nothing is written over newer bytes", () => {
   test("a target edited after it was read stops the write, and no file is written", async () => {
     const root = makeRepository(untidy);
     const plan = await makePlan(root, []);
@@ -40,7 +40,7 @@ describe("R2 (ruling 2): nothing is written over newer bytes", () => {
   });
 });
 
-describe("R2 (ruling 2): one process stays, so a signal reaches the work", () => {
+describe("one process stays, so a signal reaches the work", () => {
   test.skipIf(!existsSync("/proc/self/stat"))(
     "the process the launcher started is the Bun process, with no child",
     async () => {

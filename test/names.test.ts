@@ -3,7 +3,7 @@ import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { makeRepository, read, runFormatter, snapshot } from "./scratch.ts";
 
-describe("R3 (ruling 3): a name that starts with U+FEFF keeps it", () => {
+describe("a name that starts with U+FEFF keeps it", () => {
   test("write formats the tracked name and never reads the untracked name without it", () => {
     const root = makeRepository({ "﻿a.md": "* tracked\n" });
     writeFileSync(join(root, "a.md"), "* untracked\n");

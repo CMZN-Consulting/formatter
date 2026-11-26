@@ -71,7 +71,7 @@ function outcome(run: Run): [number, string] {
   return [run.exitCode, run.stdout];
 }
 
-describe("R1 (ruling 1): no code of the formatter runs in a process that read the repository's bunfig.toml", () => {
+describe("no code of the formatter runs in a process that read the repository's bunfig.toml", () => {
   for (const [bunfigName, bunfig] of Object.entries(bunfigs)) {
     for (const startName of startNames) {
       for (const where of ["", "src/sub"]) {

@@ -30,7 +30,7 @@ const configuration = {
     '[tool.ruff]\nline-length = 40\n\n[tool.ruff.format]\nquote-style = "single"\n',
 };
 
-describe("M5: a repository's configuration changes no byte of the result (L5)", () => {
+describe("a repository's configuration changes no byte of the result", () => {
   test("write gives the same bytes with and without the configuration files", () => {
     const plain = makeRepository(content);
     const configured = makeRepository({ ...content, ...configuration });
@@ -82,7 +82,7 @@ const bunConfigurations: Readonly<Record<string, Tree>> = {
   },
 };
 
-describe("Bun's configuration in the repository changes nothing (L5)", () => {
+describe("Bun's configuration in the repository changes nothing", () => {
   for (const [name, files] of Object.entries(bunConfigurations)) {
     test(`a bunfig.toml with a ${name} changes no byte and no exit status`, () => {
       const plain = makeRepository(content);

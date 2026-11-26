@@ -10,7 +10,7 @@ import {
   snapshot,
 } from "./scratch.ts";
 
-describe("R4 (ruling 4): a hard link is never written through", () => {
+describe("a hard link is never written through", () => {
   for (const mode of ["check", "write"]) {
     test(`${mode} exits 2 and names a formatted file that has a hard link to an ignored file`, () => {
       const root = makeRepository({

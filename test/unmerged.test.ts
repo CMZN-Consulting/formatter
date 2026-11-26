@@ -37,7 +37,7 @@ function conflicted(): string {
   return root;
 }
 
-describe("R6 (ruling 6): an unmerged file stops the run", () => {
+describe("an unmerged file stops the run", () => {
   test("the scratch repository really holds a conflict marker", () => {
     expect(read(conflicted(), "README.md")).toContain(">>>>>>> other");
   });

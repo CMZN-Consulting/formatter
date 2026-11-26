@@ -53,7 +53,7 @@ function repository(): string {
   return root;
 }
 
-describe("M2: every tracked file lands in exactly one class", () => {
+describe("every tracked file lands in exactly one class", () => {
   test("each file is in its class", async () => {
     const plan = await makePlan(repository(), []);
     const classes = Object.fromEntries(
@@ -103,7 +103,7 @@ describe("M2: every tracked file lands in exactly one class", () => {
     });
   });
 
-  test("the class counts add up to the count of the set (L3)", () => {
+  test("the class counts add up to the count of the set", () => {
     const root = repository();
     const run = runFormatter(root, ["check", "--json"]);
     expect(run.exitCode).toBe(0);

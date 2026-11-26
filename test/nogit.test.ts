@@ -21,7 +21,7 @@ function pathWithoutGit(): string {
   return directory;
 }
 
-describe("R9 (ruling 9): when git cannot be run, the message says that", () => {
+describe("when git cannot be run, the message says that", () => {
   for (const mode of ["check", "write"]) {
     test(`${mode} says git could not be run, not that the directory is no repository`, () => {
       const root = makeRepository({ "a.md": "- a\n" });

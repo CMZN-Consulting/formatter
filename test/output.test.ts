@@ -41,7 +41,7 @@ function statusWith(
   };
 }
 
-describe("R5 (ruling 5): the exit status does not depend on the report being printed", () => {
+describe("the exit status does not depend on the report being printed", () => {
   const cases: readonly [
     string,
     Readonly<Record<string, string>>,

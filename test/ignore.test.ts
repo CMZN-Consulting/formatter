@@ -57,7 +57,7 @@ function ignoredByGitignore(): string[] {
     .sort();
 }
 
-describe("M4: .formatterignore means what .gitignore means", () => {
+describe(".formatterignore means what .gitignore means", () => {
   test("a negation and a directory pattern select what the same .gitignore selects", async () => {
     const formatter = await ignoredByFormatter();
     expect(formatter).toEqual(ignoredByGitignore());
