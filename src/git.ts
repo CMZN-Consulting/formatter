@@ -2,6 +2,11 @@ export class SetError extends Error {
   override name = "SetError";
 }
 
+// git itself could not be started, which says nothing about the directory.
+export class GitUnavailable extends SetError {
+  override name = "GitUnavailable";
+}
+
 // A path from git is kept as a byte string: one character per byte, so that
 // a name that is not valid UTF-8 keeps its identity and sorts by its bytes.
 export interface Entry {
@@ -26,7 +31,7 @@ function git(args: readonly string[], cwd: string): Buffer {
       stderr: "pipe",
     });
   } catch (error) {
-    throw new SetError(`git could not be run: ${messageOf(error)}`);
+    throw new GitUnavailable(`git could not be run: ${messageOf(error)}`);
   }
   if (result.exitCode !== 0) {
     const reason = result.stderr.toString("utf8").trim();
@@ -65,7 +70,10 @@ export function findRoot(cwd: string): string {
   let output: Buffer;
   try {
     output = git(["rev-parse", "--show-toplevel"], cwd);
-  } catch {
+  } catch (error) {
+    if (error instanceof GitUnavailable) {
+      throw error;
+    }
     throw new SetError("not inside the working tree of a git repository");
   }
   const root = textOf(output.toString("latin1").replace(/\n$/, ""));
