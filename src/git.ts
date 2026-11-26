@@ -9,7 +9,7 @@ export interface Entry {
   readonly mode: string;
 }
 
-const strictUtf8 = new TextDecoder("utf-8", { fatal: true });
+const strictUtf8 = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true });
 
 function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
