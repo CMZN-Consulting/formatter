@@ -30,6 +30,7 @@ export interface PlannedFile {
 export interface Change {
   readonly path: string;
   readonly absolute: string;
+  readonly original: Uint8Array;
   readonly bytes: Uint8Array;
 }
 
@@ -194,6 +195,7 @@ export async function makePlan(
       changes.push({
         path: text,
         absolute: source.absolute,
+        original: bytes,
         bytes: output,
       });
     }
