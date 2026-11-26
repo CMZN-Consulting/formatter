@@ -168,6 +168,8 @@ It needs [Bun](https://bun.sh), git and a POSIX `sh`. The command is a small she
 - 1 when at least one would;
 - 2 when a tool failed on a file (usually a syntax error), or the files could not be listed or read.
 
+The exit status is what the work decided. A report that cannot be printed does not change it: a closed pipe, as in `formatter check | head`, leaves it as it was, and a full device gets a note on standard error and leaves it as it was.
+
 **`write`** formats every file in memory first. If a tool failed on any file, it writes nothing and exits 2. Otherwise it rewrites exactly the files that `check` would list and exits 0. After it exits 0, `check` exits 0.
 
 **The classes**, decided in this order, the first that applies:

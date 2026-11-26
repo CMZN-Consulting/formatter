@@ -1,4 +1,5 @@
 import { SetError } from "./git.ts";
+import { emit } from "./output.ts";
 import { makePlan } from "./plan.ts";
 import { makeReport, renderJson, renderText } from "./report.ts";
 import { writeChanges } from "./write.ts";
@@ -38,7 +39,7 @@ function parse(args: readonly string[]): Command | undefined {
 async function main(args: readonly string[]): Promise<number> {
   const command = parse(args);
   if (command === undefined) {
-    process.stderr.write(usage);
+    emit(2, usage);
     return 2;
   }
   const plan = await makePlan(process.cwd(), command.paths);
@@ -49,9 +50,13 @@ async function main(args: readonly string[]): Promise<number> {
     label = "changed";
   }
   const report = makeReport(plan);
-  process.stdout.write(
+  const reason = emit(
+    1,
     command.json ? renderJson(report) : renderText(report, label),
   );
+  if (reason !== undefined) {
+    emit(2, `formatter: the report could not be written: ${reason}\n`);
+  }
   if (failed) {
     return 2;
   }
@@ -63,7 +68,7 @@ export async function run(args: readonly string[]): Promise<number> {
     return await main(args);
   } catch (error) {
     const message = error instanceof SetError ? error.message : String(error);
-    process.stderr.write(`formatter: ${message}\n`);
+    emit(2, `formatter: ${message}\n`);
     return 2;
   }
 }
