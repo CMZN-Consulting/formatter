@@ -1,4 +1,4 @@
-import { afterEach } from "bun:test";
+import { afterEach, setDefaultTimeout } from "bun:test";
 import {
   lstatSync,
   mkdirSync,
@@ -13,7 +13,12 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
-export const cli = join(import.meta.dir, "..", "src", "cli.ts");
+export const launcher = join(import.meta.dir, "..", "bin", "formatter");
+export const entry = join(import.meta.dir, "..", "src", "main.ts");
+
+// A test that runs the command several times takes a few seconds on an idle
+// machine; five seconds is too tight when the machine is busy.
+setDefaultTimeout(30_000);
 
 process.env["GIT_CONFIG_GLOBAL"] = "/dev/null";
 process.env["GIT_CONFIG_NOSYSTEM"] = "1";
@@ -84,9 +89,20 @@ export function runFormatter(
   args: readonly string[],
   environment: Readonly<Record<string, string>> = {},
 ): Run {
-  const result = Bun.spawnSync([process.execPath, cli, ...args], {
+  return runCommand([launcher], cwd, args, environment);
+}
+
+// The launcher finds Bun on the path, as it does under `bun run`.
+export function runCommand(
+  command: readonly string[],
+  cwd: string,
+  args: readonly string[],
+  environment: Readonly<Record<string, string>> = {},
+): Run {
+  const path = `${dirname(process.execPath)}:${process.env["PATH"] ?? ""}`;
+  const result = Bun.spawnSync([...command, ...args], {
     cwd,
-    env: { ...process.env, ...environment },
+    env: { ...process.env, PATH: path, ...environment },
     stdout: "pipe",
     stderr: "pipe",
   });

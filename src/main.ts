@@ -76,3 +76,5 @@ export async function run(args: readonly string[]): Promise<number> {
     return 2;
   }
 }
+
+process.exitCode = await run(process.argv.slice(2));

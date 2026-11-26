@@ -1,7 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import {
+  entry,
   makeRepository,
   read,
+  runCommand,
   runFormatter,
   writeTree,
   type Tree,
@@ -101,9 +103,10 @@ describe("Bun's configuration in the repository changes nothing (L5)", () => {
       const plain = makeRepository(content);
       const configured = makeRepository(content);
       writeTree(configured, files);
-      const direct = { CMZN_FORMATTER_ISOLATED: "1" };
-      const expected = runFormatter(plain, ["check"], direct);
-      const actual = runFormatter(configured, ["check"], direct);
+      const expected = runCommand([process.execPath, entry], plain, ["check"]);
+      const actual = runCommand([process.execPath, entry], configured, [
+        "check",
+      ]);
       expect([actual.exitCode, actual.stdout]).not.toEqual([
         expected.exitCode,
         expected.stdout,

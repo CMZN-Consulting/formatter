@@ -158,7 +158,7 @@ formatter check [--json] [PATH ...]
 formatter write [--json] [PATH ...]
 ```
 
-It needs [Bun](https://bun.sh) and git. It does its work in a second Bun process that reads no `bunfig.toml` and no `.env` file, so the repository's own Bun settings change nothing. The same files give the same report and the same bytes on Linux, where this was measured; other platforms are not measured yet.
+It needs [Bun](https://bun.sh), git and a POSIX `sh`. The command is a small shell file, `bin/formatter`, that finds its own place through any links and then replaces itself, by `exec`, with one Bun process that is started with `--no-env-file` and an empty configuration file. No code of the formatter runs in a process that read the repository's `bunfig.toml`, so the repository's own Bun settings change nothing. The same files give the same report and the same bytes on Linux, where this was measured; other platforms are not measured yet.
 
 **Which files.** The command works on the git repository that holds the current directory, from its top. It takes the files that git tracks there, that is the files added with `git add`. With one or more `PATH`s it takes only the tracked files at or below those paths, given from the current directory. A file that git does not track is never read and never written. Outside a git repository the command exits 2.
 

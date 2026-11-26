@@ -1,0 +1,25 @@
+#!/bin/sh
+# Bun reads a bunfig.toml and .env files from the working directory when it
+# starts, and runs the configured process. This file is the whole of what runs
+# before that: it finds its own place through any links, then replaces itself
+# with one Bun process that reads no .env file and takes an empty file as its
+# configuration, so the repository's Bun settings change nothing.
+
+self=$0
+while [ -L "$self" ]; do
+  target=$(readlink -- "$self") || exit 2
+  case $target in
+    /*) self=$target ;;
+    *) self=$(dirname -- "$self")/$target ;;
+  esac
+done
+
+here=$(cd -- "$(dirname -- "$self")" && pwd -P) || exit 2
+root=$(cd -- "$here/.." && pwd -P) || exit 2
+
+if ! command -v bun >/dev/null 2>&1; then
+  echo "formatter: bun was not found on the path" >&2
+  exit 2
+fi
+
+exec bun --no-env-file "--config=$root/src/isolated.toml" "$root/src/main.ts" "$@"

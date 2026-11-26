@@ -6,13 +6,13 @@
   "license": "MIT",
   "type": "module",
   "bin": {
-    "formatter": "src/cli.ts"
+    "formatter": "bin/formatter"
   },
   "scripts": {
     "test": "bun test",
     "typecheck": "bun ./node_modules/typescript/bin/tsc --noEmit",
-    "format": "bun src/cli.ts write",
-    "format:check": "bun src/cli.ts check"
+    "format": "bin/formatter write",
+    "format:check": "bin/formatter check"
   },
   "dependencies": {
     "@astral-sh/ruff-wasm-nodejs": "0.17.6",
