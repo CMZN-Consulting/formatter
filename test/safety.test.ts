@@ -79,6 +79,28 @@ describe("the text report", () => {
   });
 });
 
+describe("R8 (ruling 8): the report quotes an extension as it quotes a path", () => {
+  test("a line break in an extension forges no line", () => {
+    const root = makeRepository({ "x.b\nwould change   0\n  y": "kept\n" });
+    const run = runFormatter(root, ["check"]);
+    expect(run.exitCode).toBe(0);
+    expect(run.stdout).toBe(
+      'unformatted    1\n  ".b\\nwould change   0\\n  y"  1\nwould change   0\n',
+    );
+    expect(
+      run.stdout.split("\n").filter((line) => line === "would change   0"),
+    ).toHaveLength(1);
+  });
+
+  test("an extension without a control character is printed as it is", () => {
+    const root = makeRepository({ "a.typify": "kept\n", "b.conf": "kept\n" });
+    const run = runFormatter(root, ["check"]);
+    expect(run.stdout).toBe(
+      "unformatted    2\n  .conf    1\n  .typify  1\nwould change   0\n",
+    );
+  });
+});
+
 describe("write", () => {
   test.skipIf(process.getuid?.() === 0)(
     "writes nothing when a file it would change is not writable",

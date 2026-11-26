@@ -74,7 +74,10 @@ export function renderText(report: Report, changedLabel: string): string {
     }
     lines.push(name.padEnd(labelWidth) + count);
     if (name === "unformatted") {
-      const extensions = Object.entries(report.unformatted);
+      const extensions = Object.entries(report.unformatted).map(
+        ([extension, extensionCount]) =>
+          [shownPath(extension), extensionCount] as const,
+      );
       const width =
         Math.max(...extensions.map(([extension]) => extension.length)) + 2;
       for (const [extension, extensionCount] of extensions) {
