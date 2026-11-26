@@ -175,7 +175,7 @@ The exit status is what the work decided. A report that cannot be printed does n
 **The classes**, decided in this order, the first that applies:
 
 1. `link`: git records a symbolic link or a submodule. It is never followed.
-2. `ignored`: matched by `.formatterignore` at the top of the repository. The file counts only when git tracks it.
+2. `ignored`: matched by `.formatterignore` at the top of the repository. The file counts only when git tracks it; one that stands there untracked stops the command.
 3. `tool-written`: the file's name is one of `bun.lock`, `bun.lockb`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `uv.lock`, `Cargo.lock`, `flake.lock` or `lake-manifest.json`.
 4. `binary`: a zero byte within the first 8,000 bytes, or bytes that are not valid UTF-8.
 5. `formatted`: the first tool that takes the name formats it. Prettier takes every name for which it knows a parser; for a name without a dot it also reads the first line, so a script that starts with `#!/usr/bin/env node` is formatted as JavaScript. Ruff takes `.py`; a `.pyi` stub is left unformatted, because the version of Ruff used here cannot lay out a stub. sh-syntax takes `.sh` and `.bash`; a script that holds a carriage return byte fails, because sh-syntax would read that byte as a blank where bash reads it as part of a word.
@@ -200,6 +200,7 @@ When the files cannot be listed or read safely, the command prints the reason on
 - a tracked file is missing from disk, or is no longer a regular file there;
 - a directory on a tracked file's path has become a link on disk, which would lead outside the repository;
 - `.formatterignore` is tracked as a link, or is not a regular file on disk;
+- a `.formatterignore` stands at the top of the repository on disk but git does not track it, because it was not yet added. It is not read, and the command says to add it or to remove it;
 - a file's name is not valid UTF-8 and the file is not named in `.formatterignore`;
 - a file that a tool formats (class `formatted`) has more than one hard link on disk, so a write would change every name of it, inside the repository or outside it. This holds for `check` as well as for `write`;
 - a file of the set has an unmerged entry in the index, as during a merge that conflicts, and its text may hold conflict markers. Finish the merge and add the files first;

@@ -70,12 +70,11 @@ describe("M4: .formatterignore means what .gitignore means", () => {
     expect(formatter).toContain("x.snap");
   });
 
-  test("an untracked .formatterignore is not read", async () => {
+  test("an untracked .formatterignore is not read, and it stops the run", async () => {
     const root = makeRepository(files);
     await Bun.write(`${root}/.formatterignore`, lines);
-    const plan = await makePlan(root, []);
-    expect(plan.files.filter((file) => file.className === "ignored")).toEqual(
-      [],
+    await expect(makePlan(root, [])).rejects.toThrow(
+      ".formatterignore stands at the top of the repository but git does not track it",
     );
   });
 });

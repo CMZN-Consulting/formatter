@@ -94,6 +94,24 @@ function checkIgnoreFile(root: string, entry: Entry): void {
   }
 }
 
+// An ignore file that git does not track is not read, and a run that passed
+// it over would format the files it names. The run stops instead.
+function checkNoUntrackedIgnoreFile(root: string): void {
+  try {
+    lstatSync(join(root, ignoreFileName));
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
+      return;
+    }
+    throw new SetError(
+      `${ignoreFileName}: could not be looked at: ${messageOf(error)}`,
+    );
+  }
+  throw new SetError(
+    `${ignoreFileName} stands at the top of the repository but git does not track it: add it with git add, or remove it`,
+  );
+}
+
 function readTracked(source: Source): Uint8Array {
   if (!lstatTracked(source.path, source.absolute).isFile()) {
     throw new SetError(
@@ -133,6 +151,8 @@ export async function makePlan(
   if (ignoreEntry !== undefined) {
     checkIgnoreFile(root, ignoreEntry);
     ignored = ignoredPaths(root, ignoreFileName);
+  } else {
+    checkNoUntrackedIgnoreFile(root);
   }
   const unmerged = entries.filter(
     (entry) =>
