@@ -7,6 +7,7 @@ export class SetError extends Error {
 export interface Entry {
   readonly key: string;
   readonly mode: string;
+  readonly unmerged: boolean;
 }
 
 const strictUtf8 = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true });
@@ -75,18 +76,22 @@ export function findRoot(cwd: string): string {
 }
 
 export function trackedEntries(root: string): Entry[] {
-  const seen = new Set<string>();
-  const entries: Entry[] = [];
+  const byKey = new Map<string, Entry>();
   for (const record of records(
     git(["ls-files", "-z", "--cached", "--stage"], root),
   )) {
-    const key = record.slice(record.indexOf("\t") + 1);
-    if (!seen.has(key)) {
-      seen.add(key);
-      entries.push({ key, mode: record.slice(0, record.indexOf(" ")) });
+    const tab = record.indexOf("\t");
+    const key = record.slice(tab + 1);
+    const [mode = "", , stage = "0"] = record.slice(0, tab).split(" ");
+    const unmerged = stage !== "0";
+    const known = byKey.get(key);
+    if (known === undefined) {
+      byKey.set(key, { key, mode, unmerged });
+    } else if (unmerged && !known.unmerged) {
+      byKey.set(key, { ...known, unmerged });
     }
   }
-  return entries;
+  return [...byKey.values()];
 }
 
 export function selectedPaths(

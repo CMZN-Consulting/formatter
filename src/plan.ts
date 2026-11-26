@@ -134,6 +134,16 @@ export async function makePlan(
     checkIgnoreFile(root, ignoreEntry);
     ignored = ignoredPaths(root, ignoreFileName);
   }
+  const unmerged = entries.filter(
+    (entry) =>
+      entry.unmerged && (selected === undefined || selected.has(entry.key)),
+  );
+  if (unmerged.length > 0) {
+    const names = unmerged.map((entry) => escapedOf(entry.key)).join(", ");
+    throw new SetError(
+      `${names}: unmerged in the index; finish the merge and add the files first`,
+    );
+  }
   const verified = new Set<string>();
   const files: PlannedFile[] = [];
   const changes: Change[] = [];
